@@ -145,8 +145,11 @@ def parse_macro_file(macro_file_path,
         'package_name': package_name,
         'depends_on': {
             'macros': [],
-        }
+        },
+        '_docstrings': {},
     }
+
+    nodes = {}
 
     try:
         template = dbt.clients.jinja.get_template(
@@ -163,16 +166,21 @@ def parse_macro_file(macro_file_path,
                                  package_name,
                                  name)
 
+            docstring = base_node.get('_docstrings', {}).get(key)
+
             new_node = base_node.copy()
             new_node.update({
                 'name': name,
                 'unique_id': unique_id,
+                'docstring': docstring,
                 'tags': tags,
                 'root_path': root_path,
                 'path': macro_file_path,
                 'original_file_path': macro_file_path,
                 'raw_sql': macro_file_contents,
             })
+
+            del new_node['_docstrings']
 
             new_node['generator'] = dbt.clients.jinja.macro_generator(
                 template, new_node)
