@@ -149,8 +149,6 @@ def parse_macro_file(macro_file_path,
         '_docstrings': {},
     }
 
-    nodes = {}
-
     try:
         template = dbt.clients.jinja.get_template(
             macro_file_contents, context, node=base_node)
