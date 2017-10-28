@@ -27,11 +27,11 @@ class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
 
     @classmethod
     def type(cls):
-        return 'postgres'
+        return 'azure_dw'
 
     @classmethod
     def date_function(cls):
-        return 'datenow()'
+        return 'CURRENT_TIMESTAMP()'
 
     @classmethod
     def get_status(cls, cursor):
@@ -69,6 +69,25 @@ class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
         return result
 
     @classmethod
+    def drop_relation(cls, profile, schema, rel_name, rel_type, model_name):
+        #  SQL server doesn't have a 'drop ... cascade'. so we have to
+        #  get the dependent things and drop them.
+        #  see https://stackoverflow.com/questions/4858488/sql-server-drop-table-cascade-equivalent
+
+    @classmethod
+    def rename(cls, profile, schema, from_name, to_name, model_name=None):
+        from_relation = cls.quote_schema_and_table(profile, schema, from_name)
+        to_relation = cls.quote(to_name)
+        sql = 'sp_rename {}, {}'.format(from_relation, to_relation)
+
+        connection, cursor = cls.add_query(profile, sql, model_name)
+
+    @classmethod
+    def get_columns_in_table(cls, profile, schema_name, table_name,
+                             model_name=None):
+        pass
+
+    @classmethod
     def alter_column_type(cls, profile, schema, table, column_name,
                           new_column_type, model_name=None):
         pass
@@ -88,3 +107,15 @@ class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
     @classmethod
     def cancel_connection(cls, profile, connection):
         pass
+
+    @classmethod
+    def get_create_schema_sql(cls, schema):
+        pass
+
+    @classmethod
+    def get_drop_schema_sql(cls, schema):
+        pass
+
+    @classmethod
+    def quote(cls, identifier):
+        return '[{}]'.format(identifier)
