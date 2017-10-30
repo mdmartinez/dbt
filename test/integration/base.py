@@ -119,8 +119,40 @@ class DBTIntegrationTest(unittest.TestCase):
             }
         }
 
+    def azure_dw_profile(self):
+        return {
+            'config': {
+                'send_anonymous_usage_stats': False
+            },
+            'test': {
+                'outputs': {
+                    'default2': {
+                        'type': 'azure_dw',
+                        'threads': 4,
+                        'host': os.getenv('AZURE_DW_TEST_HOST'),
+                        'port': 5432,
+                        'user': os.getenv('AZURE_DW_TEST_USER'),
+                        'password': os.getenv('AZURE_DW_TEST_PASSWORD'),
+                        'database': os.getenv('AZURE_DW_TEST_DATABASE'),
+                        'schema': self.unique_schema()
+                    },
+                    'noaccess': {
+                        'type': 'azure_dw',
+                        'threads': 4,
+                        'host': os.getenv('AZURE_DW_TEST_HOST'),
+                        'port': 5432,
+                        'user': 'noaccess',
+                        'password': 'password',
+                        'database': os.getenv('AZURE_DW_TEST_DATABASE'),
+                        'schema': self.unique_schema()
+                    }
+                },
+                'target': 'default2'
+            }
+        }
+
     def unique_schema(self):
-        schema =  self.schema
+        schema = self.schema
         return "{}_{}".format(self.prefix, schema)
 
     def get_profile(self, adapter_type):
