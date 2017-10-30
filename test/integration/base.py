@@ -162,6 +162,8 @@ class DBTIntegrationTest(unittest.TestCase):
             return self.snowflake_profile()
         elif adapter_type == 'bigquery':
             return self.bigquery_profile()
+        elif adapter_type == 'azure_dw':
+            return self.azure_dw_profile()
 
     def setUp(self):
         # create a dbt_project.yml
