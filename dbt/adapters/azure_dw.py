@@ -2,14 +2,14 @@ import pyodbc
 
 from contextlib import contextmanager
 
-import dbt.adapters.default
+import dbt.adapters.odbc
 import dbt.compat
 import dbt.exceptions
 
 from dbt.logger import GLOBAL_LOGGER as logger
 
 
-class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
+class AzureDataWarehouseAdapter(dbt.adapters.odbc.ODBCAdapter):
 
     @classmethod
     @contextmanager
@@ -34,39 +34,8 @@ class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
         return 'CURRENT_TIMESTAMP()'
 
     @classmethod
-    def get_status(cls, cursor):
-        return cursor.rowcount
-
-    @classmethod
     def get_odbc_connection_string(cls, credentials):
         return 'DRIVER={ODBC Driver 13 for SQL Server};SERVER={host};PORT={port};DATABASE={database};UID={username};PWD={password}'.format(**profile)  # noqa
-
-    @classmethod
-    def open_connection(cls, connection):
-        if connection.get('state') == 'open':
-            logger.debug('Connection is already open, skipping open.')
-            return connection
-
-        result = connection.copy()
-
-        try:
-            credentials = connection.get('credentials', {})
-            handle = pyodbc.connect(
-                cls.get_odbc_connection_string(credentials))
-
-            result['handle'] = handle
-            result['state'] = 'open'
-        except Exception as e:
-            logger.debug("Got an error when attempting to open a postgres "
-                         "connection: '{}'"
-                         .format(e))
-
-            result['handle'] = None
-            result['state'] = 'fail'
-
-            raise dbt.exceptions.FailedToConnectException(str(e))
-
-        return result
 
     @classmethod
     def drop_relation(cls, profile, schema, rel_name, rel_type, model_name):
@@ -105,12 +74,8 @@ class AzureDataWarehouseAdapter(dbt.adapters.default.DefaultAdapter):
         pass
 
     @classmethod
-    def cancel_connection(cls, profile, connection):
-        pass
-
-    @classmethod
     def get_create_schema_sql(cls, schema):
-        pass
+        return 'create schema {}'.format(schema)
 
     @classmethod
     def get_drop_schema_sql(cls, schema):

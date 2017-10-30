@@ -1,9 +1,10 @@
-from dbt.logger import GLOBAL_LOGGER as logger
+from dbt.logger import GLOBAL_LOGGER as logger  # noqa
 
+from dbt.adapters.azure_dw import AzureDataWarehouseAdapter
+from dbt.adapters.bigquery import BigQueryAdapter
 from dbt.adapters.postgres import PostgresAdapter
 from dbt.adapters.redshift import RedshiftAdapter
 from dbt.adapters.snowflake import SnowflakeAdapter
-from dbt.adapters.bigquery import BigQueryAdapter
 
 import dbt.exceptions
 
@@ -12,7 +13,8 @@ adapters = {
     'postgres': PostgresAdapter,
     'redshift': RedshiftAdapter,
     'snowflake': SnowflakeAdapter,
-    'bigquery': BigQueryAdapter
+    'bigquery': BigQueryAdapter,
+    'azure_dw': AzureDataWarehouseAdapter,
 }
 
 
