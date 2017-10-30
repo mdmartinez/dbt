@@ -17,7 +17,7 @@ class TestSimpleCopy(DBTIntegrationTest):
 
     def run__simple_copy(self, adapter_type):
         self.use_default_project()
-        self.use_profile('postgres')
+        self.use_profile(adapter_type)
         self.run_sql_file("test/integration/001_simple_copy_test/seed.sql")
 
         self.run_dbt()

@@ -35,13 +35,14 @@ class AzureDataWarehouseAdapter(dbt.adapters.odbc.ODBCAdapter):
 
     @classmethod
     def get_odbc_connection_string(cls, credentials):
-        return 'DRIVER={ODBC Driver 13 for SQL Server};SERVER={host};PORT={port};DATABASE={database};UID={username};PWD={password}'.format(**profile)  # noqa
+        return 'DRIVER={driver};SERVER={host};PORT={port};DATABASE={database};UID={user};PWD={password}'.format(**credentials)  # noqa
 
     @classmethod
     def drop_relation(cls, profile, schema, rel_name, rel_type, model_name):
         #  SQL server doesn't have a 'drop ... cascade'. so we have to
         #  get the dependent things and drop them.
         #  see https://stackoverflow.com/questions/4858488/sql-server-drop-table-cascade-equivalent
+        pass
 
     @classmethod
     def rename(cls, profile, schema, from_name, to_name, model_name=None):

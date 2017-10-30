@@ -130,20 +130,22 @@ class DBTIntegrationTest(unittest.TestCase):
                         'type': 'azure_dw',
                         'threads': 4,
                         'host': os.getenv('AZURE_DW_TEST_HOST'),
-                        'port': 5432,
+                        'port': os.getenv('AZURE_DW_TEST_PORT'),
                         'user': os.getenv('AZURE_DW_TEST_USER'),
                         'password': os.getenv('AZURE_DW_TEST_PASSWORD'),
                         'database': os.getenv('AZURE_DW_TEST_DATABASE'),
+                        'driver': os.getenv('AZURE_DW_TEST_DRIVER'),
                         'schema': self.unique_schema()
                     },
                     'noaccess': {
                         'type': 'azure_dw',
                         'threads': 4,
                         'host': os.getenv('AZURE_DW_TEST_HOST'),
-                        'port': 5432,
+                        'port': os.getenv('AZURE_DW_TEST_PORT'),
                         'user': 'noaccess',
                         'password': 'password',
                         'database': os.getenv('AZURE_DW_TEST_DATABASE'),
+                        'driver': os.getenv('AZURE_DW_TEST_DRIVER'),
                         'schema': self.unique_schema()
                     }
                 },
