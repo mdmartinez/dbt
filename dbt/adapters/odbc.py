@@ -3,6 +3,8 @@ import pyodbc
 import dbt.adapters.default
 import dbt.exceptions
 
+from dbt.adapters.default import connections_available, connections_in_use
+from dbt.contracts.connection import validate_connection
 from dbt.logger import GLOBAL_LOGGER as logger
 
 
@@ -35,10 +37,9 @@ class ODBCAdapter(dbt.adapters.default.DefaultAdapter):
             result['handle'] = handle
             result['state'] = 'open'
         except Exception as e:
-            logger.debug("Got an error when attempting to open a postgres "
+            logger.debug("Got an error when attempting to open an odbc "
                          "connection: '{}'"
                          .format(e))
-
             result['handle'] = None
             result['state'] = 'fail'
 
@@ -49,3 +50,24 @@ class ODBCAdapter(dbt.adapters.default.DefaultAdapter):
     @classmethod
     def cancel_connection(cls, profile, connection):
         pass
+
+    @classmethod
+    def commit(cls, profile, connection):
+        global connections_in_use
+
+        if dbt.flags.STRICT_MODE:
+            validate_connection(connection)
+
+        connection = cls.reload(connection)
+
+        if connection['transaction_open'] is False:
+            raise dbt.exceptions.InternalException(
+                'Tried to commit transaction on connection "{}", but '
+                'it does not have one open!'.format(connection.get('name')))
+
+        connection.get('handle').commit()
+
+        connection['transaction_open'] = False
+        connections_in_use[connection.get('name')] = connection
+
+        return connection

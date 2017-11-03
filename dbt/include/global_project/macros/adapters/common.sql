@@ -15,9 +15,10 @@
 {%- endmacro %}
 
 {% macro default__create_table_as(temporary, identifier, sql) -%}
-  create {% if temporary: -%}temporary{%- endif %} table "{{ schema }}"."{{ identifier }}" as (
-    {{ sql }}
-  );
+  create {% if temporary: -%}temporary{%- endif %} table
+    {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} as (
+      {{ sql }}
+    )
 {% endmacro %}
 
 {% macro create_view_as(identifier, sql) -%}
@@ -25,9 +26,10 @@
 {%- endmacro %}
 
 {% macro default__create_view_as(identifier, sql) -%}
-  create view "{{ schema }}"."{{ identifier }}" as (
-    {{ sql }}
-  );
+  create view
+    {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} as (
+      {{ sql }}
+    )
 {% endmacro %}
 
 
@@ -36,7 +38,7 @@
 {%- endmacro %}
 
 {% macro default__create_archive_table(schema, identifier, columns) -%}
-  create table if not exists "{{ schema }}"."{{ identifier }}" (
+  create table if not exists {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} (
     {{ column_list_for_create_table(columns) }}
   );
 {% endmacro %}

@@ -15,10 +15,11 @@ class TestSimpleCopy(DBTIntegrationTest):
     def models(self):
         return "test/integration/001_simple_copy_test/models"
 
-    def run__simple_copy(self, adapter_type):
+    def run__simple_copy(self, adapter_type, file_suffix=''):
         self.use_default_project()
         self.use_profile(adapter_type)
-        self.run_sql_file("test/integration/001_simple_copy_test/seed.sql")
+        self.run_sql_file("test/integration/001_simple_copy_test/seed{}.sql"
+                          .format(file_suffix))
 
         self.run_dbt()
 
@@ -26,7 +27,8 @@ class TestSimpleCopy(DBTIntegrationTest):
         self.assertTablesEqual("seed", "incremental")
         self.assertTablesEqual("seed", "materialized")
 
-        self.run_sql_file("test/integration/001_simple_copy_test/update.sql")
+        self.run_sql_file("test/integration/001_simple_copy_test/update{}.sql"
+                          .format(file_suffix))
 
         self.run_dbt()
 
@@ -45,6 +47,10 @@ class TestSimpleCopy(DBTIntegrationTest):
     @attr(type='azure_dw')
     def test__azure_dw__simple_copy(self):
         self.run__simple_copy('azure_dw')
+
+    @attr(type='sql_server')
+    def test__sql_server__simple_copy(self):
+        self.run__simple_copy('sql_server', '_mssql')
 
     @attr(type='redshift')
     def test__redshift__simple_copy(self):

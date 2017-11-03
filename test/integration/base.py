@@ -41,7 +41,7 @@ class DBTIntegrationTest(unittest.TestCase):
                     'default2': {
                         'type': 'postgres',
                         'threads': 4,
-                        'host': 'database',
+                        'host': 'postgres',
                         'port': 5432,
                         'user': 'root',
                         'pass': 'password',
@@ -51,7 +51,7 @@ class DBTIntegrationTest(unittest.TestCase):
                     'noaccess': {
                         'type': 'postgres',
                         'threads': 4,
-                        'host': 'database',
+                        'host': 'postgres',
                         'port': 5432,
                         'user': 'noaccess',
                         'pass': 'password',
@@ -119,6 +119,40 @@ class DBTIntegrationTest(unittest.TestCase):
             }
         }
 
+    def sql_server_profile(self):
+        return {
+            'config': {
+                'send_anonymous_usage_stats': False
+            },
+            'test': {
+                'outputs': {
+                    'default2': {
+                        'type': 'sql_server',
+                        'threads': 4,
+                        'host': 'sqlserver',
+                        'port': 1433,
+                        'user': 'sa',
+                        'password': 'Password123',
+                        'database': 'master',
+                        'driver': os.getenv('SQL_SERVER_TEST_DRIVER'),
+                        'schema': self.unique_schema()
+                    },
+                    'noaccess': {
+                        'type': 'sql_server',
+                        'threads': 4,
+                        'host': 'sqlserver',
+                        'port': 1433,
+                        'user': 'noaccess',
+                        'password': 'Password123',
+                        'database': 'master',
+                        'driver': os.getenv('SQL_SERVER_TEST_DRIVER'),
+                        'schema': self.unique_schema()
+                    }
+                },
+                'target': 'default2'
+            }
+        }
+
     def azure_dw_profile(self):
         return {
             'config': {
@@ -166,6 +200,8 @@ class DBTIntegrationTest(unittest.TestCase):
             return self.bigquery_profile()
         elif adapter_type == 'azure_dw':
             return self.azure_dw_profile()
+        elif adapter_type == 'sql_server':
+            return self.sql_server_profile()
 
     def setUp(self):
         # create a dbt_project.yml
@@ -205,22 +241,20 @@ class DBTIntegrationTest(unittest.TestCase):
 
         profile = profile_config.get('test').get('outputs').get(target)
 
-        adapter = get_adapter(profile)
+        self.setup_connection(profile)
 
+    def setup_connection(self, profile):
         # it's important to use a different connection handle here so
         # we don't look into an incomplete transaction
+        adapter = get_adapter(profile)
         connection = adapter.acquire_connection(profile, '__test')
         self.handle = connection.get('handle')
         self.adapter_type = profile.get('type')
         self.profile = profile
 
-        if self.adapter_type == 'bigquery':
-            schema_name = self.unique_schema()
-            adapter.drop_schema(profile, schema_name, '__test')
-            adapter.create_schema(profile, schema_name, '__test')
-        else:
-            self.run_sql('DROP SCHEMA IF EXISTS "{}" CASCADE'.format(self.unique_schema()))
-            self.run_sql('CREATE SCHEMA "{}"'.format(self.unique_schema()))
+        schema_name = self.unique_schema()
+        adapter.drop_schema(profile, schema_name, '__test')
+        adapter.create_schema(profile, schema_name, '__test')
 
     def use_default_project(self):
         # create a dbt_project.yml
@@ -253,23 +287,12 @@ class DBTIntegrationTest(unittest.TestCase):
             yaml.safe_dump(profile_config, f, default_flow_style=True)
 
         profile = profile_config.get('test').get('outputs').get('default2')
-        adapter = get_adapter(profile)
 
-        # it's important to use a different connection handle here so
-        # we don't look into an incomplete transaction
-        connection = adapter.acquire_connection(profile, '__test')
-        self.handle = connection.get('handle')
-        self.adapter_type = profile.get('type')
-        self.profile = profile
-
-        if self.adapter_type == 'bigquery':
-            adapter.drop_schema(profile, self.unique_schema(), '__test')
-            adapter.create_schema(profile, self.unique_schema(), '__test')
-        else:
-            self.run_sql('DROP SCHEMA IF EXISTS "{}" CASCADE'.format(self.unique_schema()))
-            self.run_sql('CREATE SCHEMA "{}"'.format(self.unique_schema()))
+        self.setup_connection(profile)
 
     def tearDown(self):
+        logger.info("Tearing down...")
+
         os.remove(DBT_PROFILES)
         os.remove("dbt_project.yml")
 
@@ -280,17 +303,10 @@ class DBTIntegrationTest(unittest.TestCase):
         except:
             os.rename("dbt_modules", "dbt_modules-{}".format(time.time()))
 
-        if self.adapter_type == 'bigquery':
-            adapter = get_adapter(self.profile)
-            adapter.drop_schema(self.profile, self.unique_schema(), '__test')
-        else:
-            self.run_sql('DROP SCHEMA IF EXISTS "{}" CASCADE'.format(self.unique_schema()))
-            self.handle.close()
-
-
-        # hack for BQ -- TODO
-        if hasattr(self.handle, 'close'):
-            self.handle.close()
+        adapter = get_adapter(self.profile)
+        adapter.drop_schema(self.profile, self.unique_schema(), '__test')
+        connection = adapter.get_connection(self.profile, '__test')
+        adapter.close(connection)
 
     @property
     def project_config(self):
@@ -307,8 +323,16 @@ class DBTIntegrationTest(unittest.TestCase):
         args = ["--strict"] + args
         logger.info("Invoking dbt with {}".format(args))
 
-        res, success =  dbt.handle_and_check(args)
-        self.assertEqual(success, expect_pass, "dbt exit state did not match expected")
+        try:
+            res, success = dbt.handle_and_check(args)
+
+            self.assertEqual(
+                success,
+                expect_pass,
+                "dbt exit state did not match expected")
+        except Exception as e:
+            logger.info(e)
+            raise
 
         return res
 
@@ -333,6 +357,9 @@ class DBTIntegrationTest(unittest.TestCase):
         if self.adapter_type == 'snowflake':
             to_return = to_return.replace("BIGSERIAL", "BIGINT AUTOINCREMENT")
 
+        if self.adapter_type in ('sql_server', 'azure_dw'):
+            to_return = to_return.replace("BIGSERIAL", "BIGINT IDENTITY")
+
         to_return = to_return.format(schema=self.unique_schema())
 
         return to_return
@@ -343,7 +370,8 @@ class DBTIntegrationTest(unittest.TestCase):
 
         with self.handle.cursor() as cursor:
             try:
-                cursor.execute(self.transform_sql(query))
+                sql = self.transform_sql(query)
+                cursor.execute(sql)
                 self.handle.commit()
                 if fetch == 'one':
                     return cursor.fetchone()
@@ -353,8 +381,6 @@ class DBTIntegrationTest(unittest.TestCase):
                     return
             except BaseException as e:
                 self.handle.rollback()
-                print(query)
-                print(e)
                 raise e
 
     def get_table_columns(self, table, schema=None):

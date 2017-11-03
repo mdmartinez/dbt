@@ -10,8 +10,11 @@ RUN apt-get update
 
 RUN apt-get install -y python-pip netcat
 RUN apt-get install -y python-dev python3-dev
+
 RUN ACCEPT_EULA=Y apt-get install -y msodbcsql
-RUN apt-get install unixodbc-dev
+RUN apt-get install -y unixodbc odbcinst unixodbc-dev locales
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+RUN locale-gen
 
 RUN pip install pip --upgrade
 RUN pip install virtualenv

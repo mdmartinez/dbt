@@ -5,6 +5,7 @@ from dbt.adapters.bigquery import BigQueryAdapter
 from dbt.adapters.postgres import PostgresAdapter
 from dbt.adapters.redshift import RedshiftAdapter
 from dbt.adapters.snowflake import SnowflakeAdapter
+from dbt.adapters.sql_server import SqlServerAdapter
 
 import dbt.exceptions
 
@@ -15,6 +16,7 @@ adapters = {
     'snowflake': SnowflakeAdapter,
     'bigquery': BigQueryAdapter,
     'azure_dw': AzureDataWarehouseAdapter,
+    'sql_server': SqlServerAdapter,
 }
 
 
