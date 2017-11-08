@@ -127,24 +127,24 @@ class DBTIntegrationTest(unittest.TestCase):
             'test': {
                 'outputs': {
                     'default2': {
-                        'type': 'sql_server',
+                        'type': 'azure_dw',
                         'threads': 4,
-                        'host': 'sqlserver',
-                        'port': 1433,
-                        'user': 'sa',
-                        'password': 'Password123',
-                        'database': 'master',
+                        'host': os.getenv('SQL_SERVER_TEST_HOST'),
+                        'port': int(os.getenv('SQL_SERVER_TEST_PORT')),
+                        'user': os.getenv('SQL_SERVER_TEST_USER'),
+                        'password': os.getenv('SQL_SERVER_TEST_PASSWORD'),
+                        'database': os.getenv('SQL_SERVER_TEST_DATABASE'),
                         'driver': os.getenv('SQL_SERVER_TEST_DRIVER'),
                         'schema': self.unique_schema()
                     },
                     'noaccess': {
-                        'type': 'sql_server',
+                        'type': 'azure_dw',
                         'threads': 4,
-                        'host': 'sqlserver',
-                        'port': 1433,
+                        'host': os.getenv('SQL_SERVER_TEST_HOST'),
+                        'port': int(os.getenv('SQL_SERVER_TEST_PORT')),
                         'user': 'noaccess',
-                        'password': 'Password123',
-                        'database': 'master',
+                        'password': 'password',
+                        'database': os.getenv('SQL_SERVER_TEST_DATABASE'),
                         'driver': os.getenv('SQL_SERVER_TEST_DRIVER'),
                         'schema': self.unique_schema()
                     }
