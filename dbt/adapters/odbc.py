@@ -71,3 +71,7 @@ class ODBCAdapter(dbt.adapters.default.DefaultAdapter):
         connections_in_use[connection.get('name')] = connection
 
         return connection
+
+    @classmethod
+    def check_schema_exists(cls, profile, schema, model_name=None):
+        return (schema in cls.get_existing_schemas(profile, model_name))
