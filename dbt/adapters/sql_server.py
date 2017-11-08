@@ -1,3 +1,5 @@
+import re
+
 from contextlib import contextmanager
 
 import dbt.adapters.odbc
@@ -37,15 +39,15 @@ class SqlServerAdapter(dbt.adapters.odbc.ODBCAdapter):
 
     @classmethod
     def drop_relation(cls, profile, schema, rel_name, rel_type, model_name):
-        #  SQL server doesn't have a 'drop ... cascade'. so we have to
-        #  get the dependent things and drop them.
-        #  see https://stackoverflow.com/questions/4858488/sql-server-drop-table-cascade-equivalent
-        pass
+        relation = cls.quote_schema_and_table(profile, schema, rel_name)
+        sql = 'drop {} if exists {}'.format(rel_type, relation)
+
+        connection, cursor = cls.add_query(profile, sql, model_name)
 
     @classmethod
     def rename(cls, profile, schema, from_name, to_name, model_name=None):
         from_relation = cls.quote_schema_and_table(profile, schema, from_name)
-        to_relation = cls.quote(to_name)
+        to_relation = to_name
         sql = "sp_rename '{}', '{}'".format(from_relation, to_relation)
 
         connection, cursor = cls.add_query(profile, sql, model_name)
@@ -70,10 +72,10 @@ class SqlServerAdapter(dbt.adapters.odbc.ODBCAdapter):
         schema_list = ",".join(["'{}'".format(schema) for schema in schemas])
 
         sql = """
-select table_catalog as name, 'table' as type from information_schema.tables
+select table_name as name, 'table' as type from information_schema.tables
 where table_schema in ({schema_list})
 union all
-select table_catalog as name, 'view' as type from information_schema.views
+select table_name as name, 'view' as type from information_schema.views
 where table_schema in ({schema_list})
 """.format(schema_list=schema_list).strip()  # noqa
 
@@ -105,11 +107,23 @@ where table_schema in ({schema_list})
         return 'create schema {}'.format(schema)
 
     @classmethod
-    def get_drop_schema_sql(cls, schema):
-        return 'drop schema if exists {}'.format(schema)
+    def drop_schema(cls, profile, schema, model_name=None):
+        logger.debug('Dropping schema "%s".', schema)
+
+        existing = cls.query_for_existing(profile, [schema], model_name)
+
+        for name, relation_type in existing.items():
+            cls.drop_relation(
+                profile, schema, name, relation_type, model_name)
+
+        sql = 'drop schema if exists {}'.format(schema)
+        return cls.add_query(profile, sql, model_name)
 
     @classmethod
     def quote(cls, identifier):
+        if re.match('^\[.*\]$', identifier):
+            return identifier
+
         return '[{}]'.format(identifier)
 
     @classmethod

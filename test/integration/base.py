@@ -372,7 +372,7 @@ class DBTIntegrationTest(unittest.TestCase):
             try:
                 sql = self.transform_sql(query)
                 cursor.execute(sql)
-                self.handle.commit()
+                # self.handle.commit()
                 if fetch == 'one':
                     return cursor.fetchone()
                 elif fetch == 'all':
