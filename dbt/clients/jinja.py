@@ -30,12 +30,23 @@ class MacroFuzzParser(jinja2.parser.Parser):
         return node
 
 
+DUMP_PYTHON = False
+
+
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
     def _parse(self, source, name, filename):
         return MacroFuzzParser(
             self, source, name,
             jinja2._compat.encode_filename(filename)
         ).parse()
+
+    def _compile(self, source, filename):
+        if DUMP_PYTHON:
+            print('\n\n\n\n')
+            print(filename)
+            print(source)
+
+        return compile(source, filename, 'exec')
 
 
 def macro_generator(template, node):
@@ -145,12 +156,40 @@ def get_template(string, ctx, node=None, capture_macros=False):
 
         env = MacroFuzzEnvironment(**args)
 
-        return env.from_string(dbt.compat.to_string(string), globals=ctx)
+        template = env.from_string(dbt.compat.to_string(string), globals=ctx)
+        return template
 
     except (jinja2.exceptions.TemplateSyntaxError,
             jinja2.exceptions.UndefinedError) as e:
         e.translated = False
         dbt.exceptions.raise_compiler_error(str(e), node)
+
+
+def incorporate_module(base_module, path, module):
+    from types import ModuleType
+
+    current = base_module
+    leaf_module = None
+
+    for index, level in enumerate(path):
+
+        if getattr(current, level, None):
+            current = leaf_module = getattr(current, level)
+        elif current is None:
+            current = leaf_module = ModuleType(level)
+        else:
+            leaf_module = ModuleType(level)
+            setattr(current, level, leaf_module)
+            current = leaf_module
+
+    for k, v in module.__dict__.items():
+        setattr(leaf_module, k, v)
+
+
+def generate_module(template, ctx, node=None):
+    module = template.make_module(ctx, False, ctx)
+
+    return module
 
 
 def render_template(template, ctx, node=None):
@@ -167,6 +206,7 @@ def get_rendered(string, ctx, node=None,
                  capture_macros=False):
     template = get_template(string, ctx, node,
                             capture_macros=capture_macros)
+    generate_module(template, ctx)
 
     return render_template(template, ctx, node)
 

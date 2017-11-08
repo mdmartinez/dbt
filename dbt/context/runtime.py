@@ -1,4 +1,5 @@
 import json
+import os.path
 
 from dbt.adapters.factory import get_adapter
 from dbt.compat import basestring
@@ -93,3 +94,43 @@ class Config:
 def generate(model, project, flat_graph):
     return dbt.context.common.generate(
         model, project, flat_graph, dbt.context.runtime)
+
+
+def _set_attr_in(d, path, value):
+    if not path:
+        return value
+
+    first, rest = path[0], path[1:]
+
+    if not d.get(first):
+        d[first] = dbt.utils.AttrDict()
+
+    d[first] = _set_attr_in(d[first], rest, value)
+
+    return d
+
+
+def import_file(flat_graph, context):
+    def fn(path, alias=None):
+        path_in_context = None
+        for _, node in flat_graph.get('macros').items():
+            node_path = node.get('original_file_path')
+            node_path = os.path.splitext(node_path)[0]
+            node_path = node_path.split(os.sep)
+
+            if path.split('.') == node_path:
+                if alias is None:
+                    path_in_context = path.split('.')
+                else:
+                    path_in_context = [alias]
+
+                _set_attr_in(context,
+                             path_in_context,
+                             node.get('module'))
+
+                return ''
+
+        dbt.exceptions.raise_compiler_error(
+            "Failed to import {}".format(path))
+
+    return fn

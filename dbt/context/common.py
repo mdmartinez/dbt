@@ -312,6 +312,7 @@ def generate(model, project, flat_graph, provider=None):
     context["write"] = write(model, project.get('target-path'), 'run')
     context["render"] = render(context, model)
     context["var"] = Var(model, context=context)
+    context["import"] = provider.import_file(flat_graph, context)
     context['context'] = context
 
     return context

@@ -54,3 +54,32 @@ class Config:
 def generate(model, project, flat_graph):
     return dbt.context.common.generate(
         model, project, flat_graph, dbt.context.parser)
+
+
+def _set_attr_in(d, path, value):
+    if not path:
+        return value
+
+    first, rest = path[0], path[1:]
+
+    print('d')
+    print(first)
+    print(rest)
+
+    if not d.get(first):
+        d[first] = dbt.utils.AttrDict()
+
+    d[first] = _set_attr_in(d[first], rest, value)
+
+    return d
+
+
+def import_file(flat_graph, context):
+    def fn(path):
+        _set_attr_in(context,
+                     path.split('.'),
+                     dbt.utils.AttrDict())
+
+        return ''
+
+    return fn

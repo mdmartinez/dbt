@@ -151,6 +151,7 @@ def parse_macro_file(macro_file_path,
     try:
         template = dbt.clients.jinja.get_template(
             macro_file_contents, context, node=base_node)
+
     except dbt.exceptions.CompilationException as e:
         e.node = base_node
         raise e
@@ -172,6 +173,8 @@ def parse_macro_file(macro_file_path,
                 'path': macro_file_path,
                 'original_file_path': macro_file_path,
                 'raw_sql': macro_file_contents,
+                'module': dbt.clients.jinja.generate_module(
+                    template, context, node=base_node)
             })
 
             new_node['generator'] = dbt.clients.jinja.macro_generator(
@@ -424,12 +427,16 @@ def load_and_parse_macros(package_name, root_project, all_projects, root_dir,
         file_contents = dbt.clients.system.load_file_contents(
             file_match.get('absolute_path'))
 
-        result.update(
-            parse_macro_file(
-                file_match.get('relative_path'),
-                file_contents,
-                root_dir,
-                package_name))
+        macros = parse_macro_file(
+            os.path.join(
+                package_name,
+                file_match.get('searched_path'),
+                file_match.get('relative_path')),
+            file_contents,
+            root_dir,
+            package_name)
+
+        result.update(macros)
 
     dbt.contracts.graph.parsed.validate_macros(result)
 
