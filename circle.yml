@@ -17,7 +17,7 @@ dependencies:
     - sudo sh -c 'curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -'
     - sudo sh -c 'curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list > /etc/apt/sources.list.d/mssql-release.list'
     - sudo apt-get update
-    - ACCEPT_EULA=Y sudo apt-get install -y unixodbc odbcinst unixodbc-dev locales msodbcsql
+    - ACCEPT_EULA=Y sudo apt-get install -y msodbcsql
   override:
     - pyenv local 2.7.12 3.6.0
 
