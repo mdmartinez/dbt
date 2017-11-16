@@ -1,3 +1,4 @@
+import pyodbc
 import re
 
 from contextlib import contextmanager
@@ -15,13 +16,14 @@ class SqlServerAdapter(dbt.adapters.odbc.ODBCAdapter):
     @contextmanager
     def exception_handler(cls, profile, sql, model_name=None,
                           connection_name=None):
-        ## scaffold -- see https://github.com/mkleehammer/pyodbc/wiki/Exceptions
+        # scaffold -- see https://github.com/mkleehammer/pyodbc/wiki/Exceptions
         try:
             yield
 
-        except Exception as e:
+        except (pyodbc.ProgrammingError, Exception) as e:
             logger.debug("Error running SQL: %s", sql)
             logger.debug("Rolling back transaction.")
+            logger.debug(e)
             cls.release_connection(profile, connection_name)
             raise dbt.exceptions.RuntimeException(str(e))
 
@@ -101,6 +103,15 @@ where table_schema in ({schema_list})
     @classmethod
     def check_schema_exists(cls, profile, schema, model_name=None):
         return (schema in cls.get_existing_schemas(profile, model_name))
+
+    @classmethod
+    def create_schema(cls, profile, schema, model_name=None):
+        logger.debug('Creating schema "%s".', schema)
+
+        sql = cls.get_create_schema_sql(schema)
+        res = cls.add_query(profile, sql, model_name, auto_begin=False)
+
+        return res
 
     @classmethod
     def get_create_schema_sql(cls, schema):
