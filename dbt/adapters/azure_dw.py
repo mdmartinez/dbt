@@ -1,10 +1,8 @@
 import pyodbc
-import time
 
 import dbt.exceptions
 
 from dbt.adapters.sql_server import SqlServerAdapter
-from dbt.sql import hoist_ctes
 
 from dbt.logger import GLOBAL_LOGGER as logger
 
@@ -68,27 +66,3 @@ class AzureDataWarehouseAdapter(SqlServerAdapter):
         sql = "rename object {} to {}".format(from_relation, to_name)
 
         connection, cursor = cls.add_query(profile, sql, model_name)
-
-    @classmethod
-    def add_query(cls, profile, sql, model_name=None, auto_begin=True):
-        connection = cls.get_connection(profile, model_name)
-        connection_name = connection.get('name')
-        sql = hoist_ctes(sql)
-
-        if auto_begin and connection['transaction_open'] is False:
-            cls.begin(profile, connection_name)
-
-        logger.debug('Using {} connection "{}".'
-                     .format(cls.type(), connection_name))
-
-        with cls.exception_handler(profile, sql, model_name, connection_name):
-            logger.debug('On %s: %s', connection_name, sql)
-            pre = time.time()
-
-            cursor = connection.get('handle').cursor()
-            cursor.execute(sql)
-
-            logger.debug("SQL status: %s in %0.2f seconds",
-                         cls.get_status(cursor), (time.time() - pre))
-
-            return connection, cursor
