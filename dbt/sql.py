@@ -111,7 +111,9 @@ def hoist_ctes(sql):
     if not result['ctes']:
         return sql
 
+    ctes_string = ', '.join(['{} as ({})'.format(identifier, dml)
+                             for (identifier, dml) in result['ctes']])
+
     return 'with {} {}'.format(
-        ', '.join(['{} as ({})'.format(identifier, dml)
-                   for (identifier, dml) in result['ctes']]),
+        ctes_string,
         result['dml'])
