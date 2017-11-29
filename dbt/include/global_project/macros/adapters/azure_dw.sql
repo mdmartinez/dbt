@@ -1,9 +1,6 @@
 {% macro azure_dw__create_view_as(identifier, sql) -%}
-  {% set to_hoist %}
-    create view {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} as
-    {{ sql }}
-  {% endset %}
-  {{ hoist_ctes(to_hoist) }}
+  create view {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} as
+  {{ hoist_ctes(sql) }}
 {% endmacro %}
 
 {% macro azure_dw__create_table_as(temporary, identifier, sql) -%}
