@@ -14,6 +14,7 @@ class TestSqlManipulations(unittest.TestCase):
         self.assertIdentity("select * from table")  # noqa
         self.assertIdentity("select * from with order by 1 desc")  # noqa
         self.assertIdentity("drop table a cascade")  # noqa
+        self.assertIdentity("with a as (with b as (select * from s.b) select * from b select * from a'")  # noqa
 
     def test__hoist_ctes(self):
         start = 'with a as (with b as (select * from s.b) select * from b) select * from a'  # noqa
