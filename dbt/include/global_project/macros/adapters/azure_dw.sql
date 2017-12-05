@@ -1,4 +1,4 @@
-{% macro dist(dist) %}
+{% macro azure_dist(dist) %}
   {%- if dist is not none -%}
     {%- set dist = dist.strip().lower() -%}
     distribution = {{ dist }}
@@ -27,7 +27,7 @@
 
   create table {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }}
   with (
-    {{ dist(_dist) }}
+    {{ azure_dist(_dist) }}
   )
   as {{ hoist_ctes(sql) }};
 
