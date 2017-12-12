@@ -1,6 +1,6 @@
 {% macro azure_dist(dist) %}
   {%- if dist is not none -%}
-    {%- set dist = dist.strip().lower() -%}
+    {%- set dist = dist.strip() -%}
     distribution = {{ dist }}
   {%- else -%}
     distribution = round_robin
@@ -15,6 +15,14 @@
   {%- endif -%}
 {% endmacro %}
 
+{% macro azure_rowstore(rowstore) %}
+  {%- if rowstore is not none -%}
+    {{ rowstore }}
+  {%- else -%}
+    clustered columnstore index
+  {%- endif -%}
+{% endmacro %}
+
 {% macro azure_dw__create_view_as(identifier, sql) -%}
   create view {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} as
   {{ hoist_ctes(sql) }}
@@ -24,14 +32,17 @@
 
   {%- set _dist = config.get('distribution') -%}
   {%- set _statistics = config.get('statistics') -%}
+  {%- set _rowstore = config.get('rowstore') -%}
 
   create table {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }}
   with (
-    {{ azure_dist(_dist) }}
+    {{ ",".join([ azure_rowstore(_rowstore), azure_dist(_dist) ]) }}
   )
   as {{ hoist_ctes(sql) }};
 
   {{ statistics(_statistics) }}
+
+  alter index all on {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }} rebuild;
 
   update statistics {{ adapter.quote(schema) }}.{{ adapter.quote(identifier) }};
 
