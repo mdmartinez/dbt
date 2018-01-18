@@ -1,18 +1,23 @@
-from dbt.logger import GLOBAL_LOGGER as logger
+from dbt.logger import GLOBAL_LOGGER as logger  # noqa
 
-from dbt.adapters.postgres import PostgresAdapter
-from dbt.adapters.redshift import RedshiftAdapter
-from dbt.adapters.snowflake import SnowflakeAdapter
-from dbt.adapters.bigquery import BigQueryAdapter
+from dbt.lazy_import import lazy_import
 
 import dbt.exceptions
 
 
+lazy_import(globals(), """
+from dbt.adapters.postgres import PostgresAdapter
+from dbt.adapters.redshift import RedshiftAdapter
+from dbt.adapters.snowflake import SnowflakeAdapter
+from dbt.adapters.bigquery import BigQueryAdapter
+""")
+
+
 adapters = {
-    'postgres': PostgresAdapter,
-    'redshift': RedshiftAdapter,
-    'snowflake': SnowflakeAdapter,
-    'bigquery': BigQueryAdapter
+    'postgres': 'PostgresAdapter',
+    'redshift': 'RedshiftAdapter',
+    'snowflake': 'SnowflakeAdapter',
+    'bigquery': 'BigQueryAdapter'
 }
 
 
@@ -26,7 +31,7 @@ def get_adapter_by_name(adapter_name):
         raise dbt.exceptions.RuntimeException(formatted_message)
 
     else:
-        return adapter
+        return globals()[adapter]
 
 
 def get_adapter(profile):
