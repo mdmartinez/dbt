@@ -1,6 +1,8 @@
 import re
 import sqlparse
 
+from dbt.logger import GLOBAL_LOGGER as logger
+
 
 class TokenType:
     DML = 'Token.Keyword.DML'
@@ -75,7 +77,10 @@ def get_ctes(sql):
 
         elif TokenType.is_identifier_list(token) and in_cte:
             for identifier_token in token.get_identifiers():
-                identifier, dml = parse_cte_sql(identifier_token.value)
+                groups = parse_cte_sql(identifier_token.value)
+                if groups is None:
+                    continue
+                identifier, dml = groups
                 parsed = get_ctes(dml)
 
                 result['ctes'] += parsed['ctes']
@@ -106,7 +111,11 @@ def get_ctes(sql):
 
 
 def hoist_ctes(sql):
-    result = get_ctes(sql)
+    try:
+        result = get_ctes(sql)
+    except:
+        import traceback
+        traceback.print_exc()
 
     if not result['ctes']:
         return sql
