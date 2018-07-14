@@ -49,16 +49,24 @@ class TestConcurrency(DBTIntegrationTest):
 
         self.run_dbt(expect_pass=False)
 
-        self.assertTablesEqual("SEED", "view_model")
-        self.assertTablesEqual("SEED", "dep")
-        self.assertTablesEqual("SEED", "table_a")
-        self.assertTablesEqual("SEED", "table_b")
+        self.assertManyTablesEqual({
+            "SEED": [
+                "view_model",
+                "dep",
+                "table_a",
+                "table_b"
+            ]
+        })
 
         self.run_sql_file("test/integration/021_concurrency_test/update.sql")
 
         self.run_dbt(expect_pass=False)
 
-        self.assertTablesEqual("SEED", "view_model")
-        self.assertTablesEqual("SEED", "dep")
-        self.assertTablesEqual("SEED", "table_a")
-        self.assertTablesEqual("SEED", "table_b")
+        self.assertManyTablesEqual({
+            "SEED": [
+                "view_model",
+                "dep",
+                "table_a",
+                "table_b",
+            ]
+        })

@@ -34,7 +34,7 @@ class TestStatements(DBTIntegrationTest):
         self.run_dbt(["seed"])
         self.run_dbt()
 
-        self.assertTablesEqual("statement_actual","statement_expected")
+        self.assertManyTablesEqual({"statement_actual": ["statement_expected"]})
 
     @attr(type="bigquery")
     def test_bigquery_statements(self):

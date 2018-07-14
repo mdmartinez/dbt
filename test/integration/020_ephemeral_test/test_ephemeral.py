@@ -34,5 +34,9 @@ class TestEphemeral(DBTIntegrationTest):
 
         self.run_dbt()
 
-        self.assertTablesEqual("SEED", "dependent")
-        self.assertTablesEqual("SEED", "double_dependent")
+        self.assertManyTablesEqual({
+            "SEED": [
+                "dependent",
+                "double_dependent"
+            ]
+        })

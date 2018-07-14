@@ -62,8 +62,14 @@ class TestGraphSelection(DBTIntegrationTest):
 
         self.run_dbt(['run', '--models', 'users+'])
 
-        self.assertTablesEqual("SEED", "users")
-        self.assertTablesEqual("SUMMARY_EXPECTED", "users_rollup")
+        self.assertManyTablesEqual({
+            "SEED": [
+                "users",
+            ],
+            "SUMMARY_EXPECTED": [
+                "users_rollup"
+            ]
+        })
         created_models = self.get_models_in_schema()
         self.assertFalse('base_users' in created_models)
         self.assertFalse('emails' in created_models)
@@ -91,8 +97,11 @@ class TestGraphSelection(DBTIntegrationTest):
 
         self.run_dbt(['run', '--models', '+users_rollup'])
 
-        self.assertTablesEqual("SEED", "users")
-        self.assertTablesEqual("SUMMARY_EXPECTED", "users_rollup")
+        self.assertManyTablesEqual({
+            "SEED": ["users"],
+            "SUMMARY_EXPECTED": ["users_rollup"]
+        })
+
         created_models = self.get_models_in_schema()
         self.assertFalse('base_users' in created_models)
         self.assertFalse('emails' in created_models)
@@ -120,7 +129,7 @@ class TestGraphSelection(DBTIntegrationTest):
 
         self.run_dbt(['run', '--models', '+users_rollup', '--exclude', 'users_rollup'])
 
-        self.assertTablesEqual("SEED", "users")
+        self.assertManyTablesEqual({"SEED": ["users"]})
         created_models = self.get_models_in_schema()
         self.assertFalse('base_users' in created_models)
         self.assertFalse('users_rollup' in created_models)
