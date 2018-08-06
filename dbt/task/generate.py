@@ -2,7 +2,7 @@ import json
 import os
 
 from dbt.adapters.factory import get_adapter
-from dbt.clients.system import write_file
+from dbt.clients.system import write_json
 from dbt.compat import bigint
 import dbt.ui.printer
 import dbt.utils
@@ -117,7 +117,7 @@ class GenerateTask(BaseTask):
         results['generated_at'] = dbt.utils.timestring()
 
         path = os.path.join(self.project['target-path'], CATALOG_FILENAME)
-        write_file(path, json.dumps(results))
+        write_json(path, results)
 
         dbt.ui.printer.print_timestamped_line(
             'Catalog written to {}'.format(os.path.abspath(path))
